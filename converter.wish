@@ -1,0 +1,27 @@
+grid [ttk::entry .c.module.n.f2.feet -width 7 -textvariable feet] -column 2 -row 1 -sticky we
+grid [ttk::label .c.module.n.f2.meters -textvariable meters] -column 2 -row 2 -sticky we
+grid [ttk::button .c.module.n.f2.calc -text "Calculate" -command calculate] -column 3 -row 3 -sticky w
+
+grid [ttk::label .c.module.n.f2.feetLabel -text "feet"] -column 3 -row 1 -sticky w
+grid [ttk::label .c.module.n.f2.isLabel -text "is equivalent to"] -column 1 -row 2 -sticky e
+grid [ttk::label .c.module.n.f2.metersLabel -text "meters"] -column 3 -row 2 -sticky w
+
+grid columnconfigure .c.module.n.f2 2 -weight 1
+foreach w [winfo children .c.module.n.f2] {grid configure $w -padx 5 -pady 5}
+focus .c.module.n.f2.feet
+
+proc calculate {} {
+    if {[catch {
+        set ::meters [expr {round($::feet*0.3048*10000.0)/10000.0}]
+        writeToTape "Converted $::feet feet(s) to $::meters meter(s)"
+    }]!=0} {
+        set ::meters ""
+    }
+}
+
+namespace eval Converter {
+    proc bindModuleKeys {} {
+        bind . <Return> {calculate}
+        bind . <KP_Enter> {calculate}
+    }
+}

@@ -1,0 +1,35 @@
+grid [ttk::labelframe .c.log -text " Log " -padding "8 0 8 8"] -column 0 -row 4 -columnspan 2 -sticky we -padx "4 4"
+grid [text .c.log.logOutput -yscrollcommand ".c.log.scrollBar set" -state disabled -height 8 -width 1] -column 0 -row 0 -sticky nsew
+grid [ttk::scrollbar .c.log.scrollBar -command ".c.log.logOutput yview" -orient vertical] -column 1 -row 0 -sticky ns
+grid [ttk::frame .c.log.toolStrip -padding "2 2"] -column 0 -row 3 -columnspan 2 -sticky we
+grid [ttk::button .c.log.toolStrip.save -text " Save "]  -column 0 -row 0 -sticky w -padx "0 2" -pady "2 0"
+grid [ttk::button .c.log.toolStrip.clear -text " Clear " -command clearLog]  -column 1 -row 0 -sticky w -padx "2 0" -pady "2 0"
+grid columnconfigure .c.log 0 -weight 1
+
+grid remove .c.log
+
+foreach w [list .c.toolStrip .c.toolStrip.version .c.toolStrip.info .c.toolStrip.copyright] {
+    bind $w <Button-1> {toggleLog}
+}
+
+proc toggleLog {} {
+    if {[grid info .c.log] ne ""} {
+        grid remove .c.log
+    } else {
+        grid .c.log
+    }
+}
+
+proc writeToLog {msg} {
+    .c.log.logOutput configure -state normal
+    if {[.c.log.logOutput index "end-1c"]!="1.0"} {.c.log.logOutput insert end "\n"}
+    .c.log.logOutput insert end "$msg"
+    .c.log.logOutput see end
+    .c.log.logOutput configure -state disabled
+}
+
+proc clearLog {} {
+    .c.log.logOutput configure -state normal
+    .c.log.logOutput delete 1.0 end
+    .c.log.logOutput configure -state disabled
+}

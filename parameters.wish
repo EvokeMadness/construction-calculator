@@ -1,0 +1,214 @@
+grid [ttk::treeview .c.notebook.n.f3.parameters -yscrollcommand ".c.notebook.n.f3.scrollBar set"] -column 0 -row 0 -sticky nsew
+grid [ttk::scrollbar .c.notebook.n.f3.scrollBar -command ".c.notebook.n.f3.parameters yview" -orient vertical] -column 1 -row 0 -sticky ns
+grid [ttk::frame .c.notebook.n.f3.toolStrip -padding "2 2"] -column 0 -row 3 -columnspan 2 -sticky e
+grid [ttk::button .c.notebook.n.f3.toolStrip.add -text " Add " -command addParameterDialog]  -column 2 -row 0 -pady "2 0"
+grid [ttk::button .c.notebook.n.f3.toolStrip.insert -text " Insert "]  -column 3 -row 0 -padx "2 0" -pady "2 0"
+grid [ttk::button .c.notebook.n.f3.toolStrip.import -text " Import file "]  -column 4 -row 0 -padx "2 0" -pady "2 0"
+grid [ttk::button .c.notebook.n.f3.toolStrip.remove -text " Remove " -command removeParameter]  -column 5 -row 0 -padx "2 0" -pady "2 0"
+grid columnconfigure .c.notebook.n.f3 0 -weight 1
+
+grid [ttk::button .c.notebook.n.f3.toolStrip.down -text " ↓ " -style Navigation.Toolbutton -command moveParameterDown]  -column 1 -row 0 -padx "2 36" -pady "2 0"
+grid [ttk::button .c.notebook.n.f3.toolStrip.up -text " ↑ " -style Navigation.Toolbutton -command moveParameterUp]  -column 0 -row 0 -padx "2 0" -pady "2 0"
+
+.c.notebook.n.f3.parameters configure -columns {Name Expression Result Comment} -show headings
+
+set parameters .c.notebook.n.f3.parameters
+set textScaleFactor 0.5
+set valueScaleFactor 1
+foreach {columnName columnWidth} {
+    Name        200
+    Expression  100
+    Result      80
+    Comment     220
+} {
+    if {$columnName eq "Name" || $columnName eq "Comment"} {
+        set scaleFactor $textScaleFactor
+    } else {
+        set scaleFactor $valueScaleFactor
+    }
+    $parameters heading $columnName -text $columnName
+    $parameters column $columnName -width [expr {int($columnWidth * $scaleFactor)}]
+}
+
+grid columnconfigure .c.notebook.n.f3 0 -weight 1
+grid rowconfigure .c.notebook.n.f3 0 -weight 1
+
+$parameters tag configure disabled -background "grey"
+$parameters insert {} 0 -values [list "Parameters" "" "" ""] -tags disabled
+$parameters insert {} 1 -values [list "Features" "" "" ""] -tags disabled
+
+proc errorAddParameterDialog {} {
+    if {![winfo exists .dlg.buttons.ok]} {
+        return
+    }
+    set name [.dlg.entry.name get]
+    set expression [.dlg.entry.expression get]
+
+    if {$name eq "" || $name eq "<NoName>" || $expression eq "" || $expression eq "NoValue"} {
+        .dlg.buttons.ok configure -state disabled
+    } else {
+        .dlg.buttons.ok configure -state normal
+    }
+}
+
+proc addParameterDialog {} {
+    if {[winfo exists .dlg]} {
+        destroy .dlg
+    }
+    toplevel .dlg
+    wm title .dlg "Add Parameter"
+    wm transient .dlg .
+    wm resizable .dlg 0 0
+
+    grid [ttk::frame .dlg.label] -column 0 -row 0 -sticky nsew
+    grid [ttk::frame .dlg.entry] -column 1 -row 0 -sticky nsew
+
+    grid [ttk::label .dlg.label.name -text "Name:"] -column 0 -row 0
+    grid [ttk::entry .dlg.entry.name] -column 0 -row 0
+    .dlg.entry.name insert 0 "<NoName>"
+    bind .dlg.entry.name <FocusIn> { %W selection range 0 end }
+    bind .dlg.entry.name <KeyRelease> { errorAddParameterDialog }
+
+    grid [ttk::label .dlg.label.expression -text "Expression:"] -column 0 -row 1
+    grid [ttk::entry .dlg.entry.expression] -column 0 -row 1
+    .dlg.entry.expression insert 0 "NoValue"
+    bind .dlg.entry.expression <FocusIn> { %W selection range 0 end }
+    bind .dlg.entry.expression <KeyRelease> { errorAddParameterDialog }
+    bind .dlg.entry.expression <FocusOut> {
+        set expression [%W get]
+        if {[catch {expr $expression} result]} {
+            set result "invalid syntax"
+        }
+        .dlg.entry.result configure -state normal
+        .dlg.entry.result delete 0 end
+        .dlg.entry.result insert 0 $result
+        .dlg.entry.result configure -state readonly
+    }
+
+    grid [ttk::label .dlg.label.result -text "Result:"] -column 0 -row 2
+    grid [ttk::entry .dlg.entry.result] -column 0 -row 2
+    .dlg.entry.result insert 0 "invalid syntax"
+    .dlg.entry.result configure -state readonly
+    bind .dlg.entry.result <FocusIn> { %W selection range 0 end }
+
+    grid [ttk::label .dlg.label.comment -text "Comment:"] -column 0 -row 3
+    grid [ttk::entry .dlg.entry.comment] -column 0 -row 3
+    bind .dlg.entry.comment <FocusIn> { %W selection range 0 end }
+
+    grid [ttk::frame .dlg.buttons] -column 0 -row 1 -columnspan 2
+    grid [ttk::button .dlg.buttons.ok -text "OK" -command [list addParameter .dlg]] -column 1 -row 0
+    grid [ttk::button .dlg.buttons.cancel -text "Cancel" -command [list destroy .dlg]] -column 0 -row 0
+
+    bind .dlg <Return> [list addParameter .dlg]
+    bind .dlg <Escape> [list destroy .dlg]
+
+    errorAddParameterDialog
+
+    focus .dlg.entry.name
+}
+
+proc addParameter {d} {
+    set name [.dlg.entry.name get]
+    set expression [.dlg.entry.expression get]
+    if {$name eq "" || $name eq "<NoName>" || $expression eq "" || $expression eq "NoValue"} {
+        return
+    }
+    global parameters
+    set insertIndex 1
+    foreach item [$parameters children {}] {
+        if {[lindex [$parameters item $item -values] 0] eq "Features"} {
+            set insertIndex [$parameters index $item]
+            break
+        }
+    }
+    set expression [.dlg.entry.expression get]
+    if {[catch {expr $expression} result]} {
+        set result "invalid syntax"
+    }
+    $parameters insert {} $insertIndex -values [list [.dlg.entry.name get] $expression $result [.dlg.entry.comment get]]
+    destroy .dlg
+}
+
+proc removeParameter {} {
+    global parameters
+    set selection [$parameters selection]
+    foreach item $selection {
+        set tags [$parameters item $item -tags]
+        if {[lsearch -exact $tags "disabled"] == -1} {
+            $parameters delete $item
+        }
+    }
+}
+
+proc moveParameterUp {} {
+    global parameters
+    set selection [$parameters selection]
+    if {[llength $selection] == 0} {
+        return
+    }
+    
+    set selIndices {}
+    foreach item $selection {
+        lappend selIndices [list $item [$parameters index $item]]
+    }
+    set selIndices [lsort -integer -index 1 $selIndices]
+    
+    set minIndex 1
+    foreach pair $selIndices {
+        set item [lindex $pair 0]
+        set tags [$parameters item $item -tags]
+        if {[lsearch -exact $tags "disabled"] != -1} {
+            continue
+        }
+        
+        set index [$parameters index $item]
+        if {$index > $minIndex} {
+            $parameters move $item {} [expr {$index - 1}]
+            set minIndex $index
+        } else {
+            set minIndex [expr {$index + 1}]
+        }
+    }
+}
+
+proc moveParameterDown {} {
+    global parameters
+    set selection [$parameters selection]
+    if {[llength $selection] == 0} {
+        return
+    }
+    
+    set selIndices {}
+    foreach item $selection {
+        lappend selIndices [list $item [$parameters index $item]]
+    }
+    set selIndices [lsort -integer -decreasing -index 1 $selIndices]
+    
+    set featuresIndex -1
+    foreach child [$parameters children {}] {
+        if {[lindex [$parameters item $child -values] 0] eq "Features"} {
+            set featuresIndex [$parameters index $child]
+            break
+        }
+    }
+    if {$featuresIndex == -1} {
+        set featuresIndex [llength [$parameters children {}]]
+    }
+    
+    set maxIndex [expr {$featuresIndex - 1}]
+    foreach pair $selIndices {
+        set item [lindex $pair 0]
+        set tags [$parameters item $item -tags]
+        if {[lsearch -exact $tags "disabled"] != -1} {
+            continue
+        }
+        
+        set index [$parameters index $item]
+        if {$index < $maxIndex} {
+            $parameters move $item {} [expr {$index + 1}]
+            set maxIndex $index
+        } else {
+            set maxIndex [expr {$index - 1}]
+        }
+    }
+}

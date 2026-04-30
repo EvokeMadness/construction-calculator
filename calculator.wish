@@ -1,0 +1,61 @@
+set display ""
+
+grid [ttk::frame .c.module.n.f1.buttons -style Module.TLabelframe] -column 1 -row 4 -columnspan 4 -sticky s
+grid rowconfigure .c.module.n.f1 4 -weight 1
+
+grid [ttk::button .c.module.n.f1.buttons.button0 -text "0" -style "Button.TButton" -command [list onInput 0]] -column 1 -row 12
+grid [ttk::button .c.module.n.f1.buttons.buttonPoint -text "." -style "Button.TButton" -command [list onInput .]] -column 2 -row 12
+
+grid [ttk::button .c.module.n.f1.buttons.button1 -text "1" -style "Button.TButton" -command [list onInput 1]] -column 1 -row 11
+grid [ttk::button .c.module.n.f1.buttons.button2 -text "2" -style "Button.TButton" -command [list onInput 2]] -column 2 -row 11
+grid [ttk::button .c.module.n.f1.buttons.button3 -text "3" -style "Button.TButton" -command [list onInput 3]] -column 3 -row 11
+
+grid [ttk::button .c.module.n.f1.buttons.button4 -text "4" -style "Button.TButton" -command [list onInput 4]] -column 1 -row 10
+grid [ttk::button .c.module.n.f1.buttons.button5 -text "5" -style "Button.TButton" -command [list onInput 5]] -column 2 -row 10
+grid [ttk::button .c.module.n.f1.buttons.button6 -text "6" -style "Button.TButton" -command [list onInput 6]] -column 3 -row 10
+
+grid [ttk::button .c.module.n.f1.buttons.button7 -text "7" -style "Button.TButton" -command [list onInput 7]] -column 1 -row 9
+grid [ttk::button .c.module.n.f1.buttons.button8 -text "8" -style "Button.TButton" -command [list onInput 8]] -column 2 -row 9
+grid [ttk::button .c.module.n.f1.buttons.button9 -text "9" -style "Button.TButton" -command [list onInput 9]] -column 3 -row 9
+
+grid [ttk::button .c.module.n.f1.buttons.buttonEqual -text "=" -style "Operator.TButton" -command [list onInput =]] -column 3 -row 12
+grid [ttk::button .c.module.n.f1.buttons.buttonAdd -text "+" -style "Operator.TButton" -command [list onInput +]] -column 4 -row 12
+grid [ttk::button .c.module.n.f1.buttons.buttonSubtract -text "-" -style "Operator.TButton" -command [list onInput -]] -column 4 -row 11
+grid [ttk::button .c.module.n.f1.buttons.buttonMultiply -text "x" -style "Operator.TButton" -command [list onInput *]] -column 4 -row 10
+grid [ttk::button .c.module.n.f1.buttons.buttonDivide -text "÷" -style "Operator.TButton" -command [list onInput /]] -column 4 -row 9
+
+grid [ttk::button .c.module.n.f1.buttons.buttonOff -text "Off" -style "Operator.TButton"] -column 1 -row 4
+grid [ttk::button .c.module.n.f1.buttons.buttonOn -text "On/C" -command clearDisplay -style "Operator.TButton"] -column 4 -row 4
+grid [ttk::entry .c.module.n.f1.display -font {size 18} -justify right -textvariable display -state readonly] -column 1 -row 3 -columnspan 4 -sticky we
+
+proc clearDisplay {} {
+    global display
+    set display ""
+}
+
+proc onInput {key} {
+    global display
+
+    if {$display eq "Error"} {
+        set display ""
+    }
+
+    if {$key eq "="} {
+        set evalStr $display
+        if {[catch {expr $evalStr} result]} {
+            set display "Error"
+        } else {
+            writeToTape "$display = $result"
+            set display $result
+        }
+    } else {
+        append display $key
+    }
+}
+
+namespace eval Calculator {
+    proc bindModuleKeys {} {
+        bind . <Return> {onInput =}
+        bind . <KP_Enter> {onInput =}
+    }
+}

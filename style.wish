@@ -1,0 +1,7 @@
+ttk::style configure Navigation.Toolbutton -font {size 16}
+ttk::style configure Clipboard.TLabelframe -background "grey" -borderwidth 0
+ttk::style configure Clipboard.Toolbutton -background "grey" -foreground "white"
+ttk::style configure Button.TButton -font {size 16} -background "white"
+ttk::style configure Operator.TButton -font {size 16} -background "light goldenrod"
+ttk::style configure Module.TLabelframe -background "lightslategrey"
+ttk::style configure Module.TLabelframe.Label -background "lightslategrey" -foreground "white"

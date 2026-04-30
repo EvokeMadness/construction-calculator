@@ -1,0 +1,120 @@
+package require Tk
+
+wm title . "Construction Calculator"
+wm resizable . 0 0
+
+bind . <Escape> { exit }
+
+set infoText ""
+
+source "style.wish"
+source "licenses.wish"
+
+grid [ttk::frame .c] -padx "2 2" -pady "0 4"
+
+. configure -menu [menu .menubar]
+set m .menubar
+$m add cascade -menu [menu $m.file -tearoff 0] -label File
+$m add cascade -menu [menu $m.help -tearoff 0] -label Help
+
+$m.file add command -label "New" -accelerator "Ctrl+N"
+$m.file add command -label "Open" -command "browseClick" -accelerator "Ctrl+O"
+$m.file add command -label "Reopen"
+$m.file add command -label "Save" -accelerator "Ctrl+S"
+$m.file add command -label "Save As" -accelerator "Ctrl+Shift+S"
+$m.file add command -label "Preferences" -accelerator "Ctrl+P"
+
+set recentFiles {}
+menu $m.file.recent -tearoff 0
+$m.file add cascade -menu $m.file.recent -label "Most Recently Used"
+if {[llength $recentFiles] == 0} {
+    $m.file.recent add command -label "<Empty>" -state disabled
+} else {
+    foreach f $recentFiles {
+        $m.file.recent add command -label [file tail $f] -command [list openFile $f]
+    }
+}
+$m.file.recent add separator
+$m.file.recent add command -label "Clear"
+
+$m.file add command -label "Exit" -accelerator "Ctrl+Q"
+
+$m.help add command -label "Licenses" -command "readLicense"
+
+grid [ttk::frame .c.navigation] -column 0 -row 0 -columnspan 2 -sticky we
+grid [ttk::button .c.navigation.buttonBack -text " ← " -style Navigation.Toolbutton] -column 0 -row 1
+grid [ttk::button .c.navigation.buttonForward -text " → " -style Navigation.Toolbutton] -column 1 -row 1
+grid [ttk::button .c.navigation.buttonReload -text " ⟳ " -style Navigation.Toolbutton] -column 2 -row 1
+grid [ttk::entry .c.navigation.file_label -font {size 16} -textvariable fileLabel] -column 3 -row 1 -sticky we
+grid columnconfigure .c.navigation 3 -weight 1
+
+grid [ttk::frame .c.clipboard -style Clipboard.TLabelframe -padding "0 4"] -column 0 -row 1 -columnspan 2 -sticky we
+grid [ttk::label .c.clipboard.clipboard_label -text " ★ Clipboard toolbar items" -style Clipboard.Toolbutton]
+
+grid [ttk::labelframe .c.module -text " Module " -padding "8 0 8 8"] -column 0 -row 2 -sticky nwes -padx "4 4"
+grid [ttk::notebook .c.module.n] -sticky nsew
+grid rowconfigure .c.module 0 -weight 1
+grid columnconfigure .c.module 0 -weight 1
+.c.module.n add [ttk::frame .c.module.n.f1] -text "Calculator"
+.c.module.n add [ttk::frame .c.module.n.f2] -text "Converter"
+
+grid [ttk::labelframe .c.notebook -text " Notebook " -padding "8 0 8 8"] -column 1 -row 2 -sticky nwes -padx "4 4"
+grid [ttk::notebook .c.notebook.n] -sticky nsew
+grid rowconfigure .c.notebook 0 -weight 1
+grid columnconfigure .c.notebook 0 -weight 1
+.c.notebook.n add [ttk::frame .c.notebook.n.f1] -text "Tape"
+.c.notebook.n add [ttk::frame .c.notebook.n.f2] -text "Notebook"
+.c.notebook.n add [ttk::frame .c.notebook.n.f3] -text "Parameters"
+
+grid [ttk::frame .c.toolStrip -padding "2 2"] -column 0 -row 3 -columnspan 2 -sticky we
+grid [ttk::label .c.toolStrip.version -text " Version 0.1 " -state disabled]  -column 0 -row 0 -sticky w
+grid [ttk::label .c.toolStrip.info -textvariable infoText -state disabled]  -column 1 -row 0 -sticky w
+grid [ttk::label .c.toolStrip.copyright -text " © 2026 EvokeMadness " -state disabled]  -column 2 -row 0 -sticky e
+grid columnconfigure .c.toolStrip 1 -weight 1
+
+source "calculator.wish"
+source "converter.wish"
+
+source "tape.wish"
+source "notebook.wish"
+source "parameters.wish"
+
+source "log.wish"
+
+proc updateBindings {} {
+    set moduleTab [.c.module.n select]
+    set notebookTab [.c.notebook.n select]
+
+    if {$moduleTab eq ".c.module.n.f1"} {
+        Calculator::bindModuleKeys
+    } elseif {$moduleTab eq ".c.module.n.f2"} {
+        Converter::bindModuleKeys
+    } else {
+        bind . <Return> {}
+        bind . <KP_Enter> {}
+    }
+
+    if {$notebookTab eq ".c.notebook.n.f2"} {
+        bind . <Return> {}
+    }
+}
+
+updateBindings
+
+bind .c.module.n <<NotebookTabChanged>> { updateBindings }
+bind .c.notebook.n <<NotebookTabChanged>> { updateBindings }
+
+proc openFile {filepath} {
+    global fileLabel
+    set fileLabel "$filepath"
+    writeToLog "Opened file: $fileLabel"
+}
+
+proc browseClick {} {
+    set selectedPath [tk_getOpenFile -initialdir ~ -title "Select File"]
+    if {$selectedPath ne ""} {
+        openFile $selectedPath
+    } else {
+        writeToLog "No file selected."
+    }
+}

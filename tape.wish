@@ -1,0 +1,13 @@
+grid [text .c.notebook.n.f1.tapeOutput -yscrollcommand ".c.notebook.n.f1.scrollBar set" -state disabled -width 30 -height 15] -column 0 -row 0 -sticky nsew
+grid [ttk::scrollbar .c.notebook.n.f1.scrollBar -command ".c.notebook.n.f1.tapeOutput yview" -orient vertical] -column 1 -row 0 -sticky ns
+grid columnconfigure .c.notebook.n.f1 0 -weight 1
+grid rowconfigure .c.notebook.n.f1 0 -weight 1
+
+proc writeToTape {msg} {
+    .c.notebook.n.f1.tapeOutput configure -state normal
+    if {[.c.notebook.n.f1.tapeOutput index "end-1c"]!="1.0"} {.c.notebook.n.f1.tapeOutput insert end "\n"}
+    .c.notebook.n.f1.tapeOutput insert end "$msg"
+    .c.notebook.n.f1.tapeOutput see end
+    .c.notebook.n.f1.tapeOutput configure -state disabled
+    writeToLog "Wrote `$msg` to tape."
+}

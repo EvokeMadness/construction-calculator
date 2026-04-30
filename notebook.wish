@@ -1,0 +1,4 @@
+grid [text .c.notebook.n.f2.notebook -yscrollcommand ".c.notebook.n.f2.scrollBar set" -width 30 -height 15] -column 0 -row 0 -sticky nsew
+grid [ttk::scrollbar .c.notebook.n.f2.scrollBar -command ".c.notebook.n.f2.notebook yview" -orient vertical] -column 1 -row 0 -sticky ns
+grid columnconfigure .c.notebook.n.f2 0 -weight 1
+grid rowconfigure .c.notebook.n.f2 0 -weight 1

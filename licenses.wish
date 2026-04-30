@@ -1,0 +1,10 @@
+proc readLicense {} {
+    tk::toplevel .licenses
+    grid [text .licenses.textBox]
+    
+    set fl [open "LICENSE.txt" r]
+    set data [read $fl]
+    close $fl
+    .licenses.textBox insert 1.0 $data
+    .licenses.textBox configure -state disabled
+}
